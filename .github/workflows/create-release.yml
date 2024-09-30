@@ -1,0 +1,42 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 仅在推送以"v"开头的标签时触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set reusable strings
+        id: strings
+        run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+      - name: Build the executable
+        run: |
+          # 这里是构建可执行程序的命令
+          mkdir -p ${{ steps.strings.outputs.build-output-dir }}
+          echo "This is a sample executable." > ${{ steps.strings.outputs.build-output-dir }}/CppTest
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref }}  # 使用当前的标签名
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.strings.outputs.build-output-dir }}/my-executable
+          asset_name: my-executable
+          asset_content_type: application/octet-stream
